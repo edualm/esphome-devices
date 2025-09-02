@@ -1,0 +1,450 @@
+esphome:
+  name: media-screen-escritorio
+  friendly_name: Media Screen (Escritório)
+
+esp32:
+  board: esp32dev
+
+logger:
+
+api:
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: "The Tortured Poets Apartment"
+  password: "butdaddyilovehim13"
+
+font:
+  - file:
+      type: gfonts
+      family: Roboto
+    id: roboto_large
+    size: 24
+    bpp: 4
+  - file:
+      type: gfonts
+      family: Roboto
+    id: roboto_medium
+    size: 16
+    bpp: 4
+  - file:
+      type: gfonts
+      family: Roboto
+    id: roboto_small
+    size: 12
+    bpp: 4
+
+# Material Design Icons for buttons
+image:
+  - file: mdi:play
+    id: play_icon
+    type: binary
+    transparency: chroma_key
+    resize: 32x32
+  - file: mdi:pause
+    id: pause_icon
+    type: binary
+    transparency: chroma_key
+    resize: 32x32
+  - file: mdi:skip-previous
+    id: prev_icon
+    type: binary
+    transparency: chroma_key
+    resize: 28x28
+  - file: mdi:skip-next
+    id: next_icon
+    type: binary
+    transparency: chroma_key
+    resize: 28x28
+  - file: mdi:volume-minus
+    id: vol_down_icon
+    type: binary
+    transparency: chroma_key
+    resize: 20x20
+  - file: mdi:volume-plus
+    id: vol_up_icon
+    type: binary
+    transparency: chroma_key
+    resize: 20x20
+
+# Improved color scheme (red/blue swapped for your display)
+color:
+  - id: color_primary
+    red: 0.42     # Will display as gray (nice button color)
+    green: 0.42
+    blue: 0.42
+  - id: color_primary_dark
+    red: 0.6      # Darker blue for pressed states
+    green: 0.3
+    blue: 0.05
+  - id: color_success
+    red: 0.1      # Will display as green (playing state)
+    green: 0.8
+    blue: 0.3
+  - id: color_accent
+    red: 0.2      # Teal accent color
+    green: 0.7
+    blue: 0.9
+  - id: color_background
+    red: 0.08     # Dark background with slight blue tint
+    green: 0.12
+    blue: 0.18
+  - id: color_surface
+    red: 0.12     # Slightly lighter surface color
+    green: 0.16
+    blue: 0.22
+  - id: color_text
+    red: 0.95     # Light text (white)
+    green: 0.95
+    blue: 0.95
+  - id: color_text_secondary
+    red: 0.7      # Secondary text (dimmer)
+    green: 0.7
+    blue: 0.7
+  - id: color_progress
+    red: 0.0      # Bright green for progress bars
+    green: 0.9
+    blue: 0.4
+
+globals:
+  - id: current_volume
+    type: float
+    initial_value: '0.5'
+  - id: is_playing
+    type: bool
+    initial_value: 'false'
+  - id: play_start_time
+    type: unsigned long
+    initial_value: '0'
+  - id: media_duration_seconds
+    type: float
+    initial_value: '0.0'
+  - id: media_position_at_start
+    type: float
+    initial_value: '0.0'
+
+# Get media info from Home Assistant
+text_sensor:
+  - platform: homeassistant
+    id: media_title
+    entity_id: media_player.escritorio
+    attribute: media_title
+    internal: true
+
+  - platform: homeassistant
+    id: media_artist
+    entity_id: media_player.escritorio
+    attribute: media_artist
+    internal: true
+
+  - platform: homeassistant
+    id: media_album
+    entity_id: media_player.escritorio
+    attribute: media_album_name
+    internal: true
+
+  - platform: homeassistant
+    id: media_volume_text
+    entity_id: media_player.escritorio
+    attribute: volume_level
+    internal: true
+    on_value:
+      then:
+        - lambda: |-
+            if (!x.empty() && x != "unknown") {
+              id(current_volume) = atof(x.c_str());
+            }
+
+  # Get duration and position as text (only updates on state change)
+  - platform: homeassistant
+    id: media_duration_text
+    entity_id: media_player.escritorio
+    attribute: media_duration
+    internal: true
+    on_value:
+      then:
+        - lambda: |-
+            if (!x.empty() && x != "unknown") {
+              id(media_duration_seconds) = atof(x.c_str());
+            }
+
+  - platform: homeassistant
+    id: media_position_text
+    entity_id: media_player.escritorio
+    attribute: media_position
+    internal: true
+    on_value:
+      then:
+        - lambda: |-
+            if (!x.empty() && x != "unknown") {
+              id(media_position_at_start) = atof(x.c_str());
+              id(play_start_time) = millis();
+            }
+
+  # Track playback state
+  - platform: homeassistant
+    id: media_state
+    entity_id: media_player.escritorio
+    internal: true
+    on_value:
+      then:
+        - lambda: |-
+            if (x == "playing") {
+              id(is_playing) = true;
+              id(play_start_time) = millis();
+            } else {
+              id(is_playing) = false;
+            }
+
+script:
+  - id: play_pause_speaker
+    then:
+      - homeassistant.service:
+          service: media_player.media_play_pause
+          data:
+            entity_id: media_player.escritorio
+
+  - id: volume_up
+    then:
+      - homeassistant.service:
+          service: media_player.volume_set
+          data:
+            entity_id: media_player.escritorio
+            volume_level: !lambda |-
+              float new_vol = id(current_volume) + 0.1;
+              if (new_vol > 1.0) new_vol = 1.0;
+              id(current_volume) = new_vol;
+              return new_vol;
+
+  - id: volume_down
+    then:
+      - homeassistant.service:
+          service: media_player.volume_set
+          data:
+            entity_id: media_player.escritorio
+            volume_level: !lambda |-
+              float new_vol = id(current_volume) - 0.1;
+              if (new_vol < 0.0) new_vol = 0.0;
+              id(current_volume) = new_vol;
+              return new_vol;
+
+  - id: next_track
+    then:
+      - homeassistant.service:
+          service: media_player.media_next_track
+          data:
+            entity_id: media_player.escritorio
+
+  - id: previous_track
+    then:
+      - homeassistant.service:
+          service: media_player.media_previous_track
+          data:
+            entity_id: media_player.escritorio
+
+output:
+  - platform: ledc
+    pin: GPIO21
+    id: backlight_pwm
+
+light:
+  - platform: monochromatic
+    output: backlight_pwm
+    name: Display Backlight
+    id: backlight
+    restore_mode: ALWAYS_ON
+
+spi:
+  - id: tft
+    clk_pin: GPIO14
+    mosi_pin: GPIO13
+    miso_pin: GPIO12
+  - id: touch
+    clk_pin: GPIO25
+    mosi_pin: GPIO32
+    miso_pin: GPIO39
+
+display:
+  - platform: ili9xxx
+    model: ILI9341
+    spi_id: tft
+    cs_pin: GPIO15
+    dc_pin: GPIO2
+    auto_clear_enabled: false
+    invert_colors: false
+    color_palette: 8BIT
+    rotation: 0
+    dimensions: 
+      width: 320
+      height: 240
+    update_interval: 500ms
+    lambda: |-
+      // Clear background with gradient-like effect
+      it.fill(id(color_background));
+      
+      // Song info with improved hierarchy
+      std::string title = id(media_title).state;
+      std::string artist = id(media_artist).state;
+      std::string album = id(media_album).state;
+      
+      if (title.length() > 35) title = title.substr(0, 32) + "...";
+      if (artist.length() > 35) artist = artist.substr(0, 32) + "...";
+      if (album.length() > 35) album = album.substr(0, 32) + "...";
+      
+      // Main title - bright white
+      it.print(160, 15, id(roboto_medium), id(color_text), TextAlign::CENTER, title.c_str());
+      // Artist - secondary color
+      it.print(160, 32, id(roboto_small), id(color_text_secondary), TextAlign::CENTER, artist.c_str());
+      // Album - dimmer
+      it.print(160, 47, id(roboto_small), id(color_text_secondary), TextAlign::CENTER, album.c_str());
+      
+      // Calculate current position (local calculation)
+      float current_position = id(media_position_at_start);
+      if (id(is_playing) && id(play_start_time) > 0) {
+        unsigned long elapsed_ms = millis() - id(play_start_time);
+        current_position += (elapsed_ms / 1000.0);
+      }
+      
+      float duration = id(media_duration_seconds);
+      float progress = 0.0;
+      if (duration > 0.0 && current_position >= 0.0) {
+        progress = current_position / duration;
+        if (progress > 1.0) progress = 1.0;
+        if (progress < 0.0) progress = 0.0;
+      }
+      
+      // Enhanced progress bar with rounded corners effect
+      int bar_x = 10, bar_y = 65, bar_width = 300, bar_height = 8;
+      // Background track
+      it.filled_rectangle(bar_x, bar_y, bar_width, bar_height, id(color_surface));
+      it.rectangle(bar_x, bar_y, bar_width, bar_height, id(color_text_secondary));
+      
+      // Progress fill
+      int fill_width = (int)(progress * (bar_width - 2));
+      if (fill_width > 0) {
+        it.filled_rectangle(bar_x + 1, bar_y + 1, fill_width, bar_height - 2, id(color_progress));
+      }
+      
+      // Time display
+      char time_text[20] = "0:00 / 0:00";
+      if (duration > 0.0) {
+        int pos_min = (int)(current_position / 60);
+        int pos_sec = (int)(current_position) % 60;
+        int dur_min = (int)(duration / 60);
+        int dur_sec = (int)(duration) % 60;
+        sprintf(time_text, "%d:%02d / %d:%02d", pos_min, pos_sec, dur_min, dur_sec);
+      }
+      it.print(160, 85, id(roboto_small), id(color_text_secondary), TextAlign::CENTER, time_text);
+      
+      // Enhanced control buttons with better colors
+      // Previous button
+      int prev_x = 40, prev_y = 105, prev_w = 60, prev_h = 50;
+      it.filled_rectangle(prev_x, prev_y, prev_w, prev_h, id(color_primary));
+      it.rectangle(prev_x, prev_y, prev_w, prev_h, id(color_accent));
+      it.image(prev_x + prev_w/2, prev_y + prev_h/2, id(prev_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
+      
+      // Play/Pause button - special highlighting when playing
+      int play_x = 130, play_y = 105, play_w = 60, play_h = 50;
+      auto play_color = id(is_playing) ? id(color_success) : id(color_primary);
+      auto play_border = id(is_playing) ? id(color_progress) : id(color_accent);
+      it.filled_rectangle(play_x, play_y, play_w, play_h, play_color);
+      it.rectangle(play_x, play_y, play_w, play_h, play_border);
+      // Extra glow effect when playing
+      if (id(is_playing)) {
+        it.rectangle(play_x - 1, play_y - 1, play_w + 2, play_h + 2, play_border);
+      }
+      
+      // Show play or pause icon based on state
+      if (id(is_playing)) {
+        it.image(play_x + play_w/2, play_y + play_h/2, id(pause_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
+      } else {
+        it.image(play_x + play_w/2, play_y + play_h/2, id(play_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
+      }
+      
+      // Next button  
+      int next_x = 220, next_y = 105, next_w = 60, next_h = 50;
+      it.filled_rectangle(next_x, next_y, next_w, next_h, id(color_primary));
+      it.rectangle(next_x, next_y, next_w, next_h, id(color_accent));
+      it.image(next_x + next_w/2, next_y + next_h/2, id(next_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
+      
+      // Volume section with accent color
+      it.print(160, 175, id(roboto_small), id(color_accent), TextAlign::CENTER, "Volume");
+      
+      // Enhanced volume bar
+      int vol_bar_x = 60, vol_bar_y = 190, vol_bar_w = 200, vol_bar_h = 12;
+      it.filled_rectangle(vol_bar_x, vol_bar_y, vol_bar_w, vol_bar_h, id(color_surface));
+      it.rectangle(vol_bar_x, vol_bar_y, vol_bar_w, vol_bar_h, id(color_text_secondary));
+      int vol_fill_w = (int)((vol_bar_w - 2) * id(current_volume));
+      if (vol_fill_w > 0) {
+        it.filled_rectangle(vol_bar_x + 1, vol_bar_y + 1, vol_fill_w, vol_bar_h - 2, id(color_accent));
+      }
+      
+      // Volume buttons with consistent styling
+      int vol_down_x = 15, vol_down_y = 178, vol_down_w = 35, vol_down_h = 35;
+      it.filled_rectangle(vol_down_x, vol_down_y, vol_down_w, vol_down_h, id(color_primary));
+      it.rectangle(vol_down_x, vol_down_y, vol_down_w, vol_down_h, id(color_accent));
+      it.image(vol_down_x + vol_down_w/2, vol_down_y + vol_down_h/2, id(vol_down_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
+      
+      int vol_up_x = 270, vol_up_y = 178, vol_up_w = 35, vol_up_h = 35;
+      it.filled_rectangle(vol_up_x, vol_up_y, vol_up_w, vol_up_h, id(color_primary));
+      it.rectangle(vol_up_x, vol_up_y, vol_up_w, vol_up_h, id(color_accent));
+      it.image(vol_up_x + vol_up_w/2, vol_up_y + vol_up_h/2, id(vol_up_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
+      
+      // Volume percentage with accent color
+      char vol_text[10];
+      sprintf(vol_text, "%d%%", (int)(id(current_volume) * 100));
+      it.print(160, 215, id(roboto_small), id(color_accent), TextAlign::CENTER, vol_text);
+
+touchscreen:
+  platform: xpt2046
+  id: my_touchscreen
+  spi_id: touch
+  cs_pin: GPIO33
+  interrupt_pin: GPIO36
+  calibration:
+    x_min: 364
+    x_max: 3778
+    y_min: 388
+    y_max: 3757
+  transform:
+    swap_xy: true
+    mirror_x: true  # Fixed X-axis mirroring
+  on_touch:
+    lambda: |-
+      int touch_x = touch.x;
+      int touch_y = 240 - touch.y;
+      
+      ESP_LOGI("touch", "Touch at: %d, %d", touch_x, touch_y);
+      
+      // Play/Pause button (130,105,60,50)
+      if (touch_x >= 130 && touch_x <= 190 && touch_y >= 105 && touch_y <= 155) {
+        ESP_LOGI("touch", "Play/Pause pressed");
+        id(play_pause_speaker).execute();
+      }
+      
+      // Previous track button (40,105,60,50)
+      else if (touch_x >= 40 && touch_x <= 100 && touch_y >= 105 && touch_y <= 155) {
+        ESP_LOGI("touch", "Previous track pressed");
+        id(previous_track).execute();
+      }
+      
+      // Next track button (220,105,60,50)
+      else if (touch_x >= 220 && touch_x <= 280 && touch_y >= 105 && touch_y <= 155) {
+        ESP_LOGI("touch", "Next track pressed");
+        id(next_track).execute();
+      }
+      
+      // Volume down button (20,185,35,22)
+      else if (touch_x >= 20 && touch_x <= 55 && touch_y >= 185 && touch_y <= 207) {
+        ESP_LOGI("touch", "Volume down pressed");
+        id(volume_down).execute();
+      }
+      
+      // Volume up button (265,185,35,22)
+      else if (touch_x >= 265 && touch_x <= 300 && touch_y >= 185 && touch_y <= 207) {
+        ESP_LOGI("touch", "Volume up pressed");
+        id(volume_up).execute();
+      }
+
