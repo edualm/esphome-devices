@@ -134,6 +134,12 @@ globals:
   - id: media_position_at_start
     type: float
     initial_value: '0.0'
+  - id: last_activity_time
+    type: unsigned long
+    initial_value: '0'
+  - id: backlight_auto_toggle_enabled
+    type: bool
+    initial_value: 'true'
 
 # Get media info from Home Assistant
 text_sensor:
@@ -222,12 +228,34 @@ text_sensor:
     on_value:
       then:
         - lambda: |-
+            ESP_LOGI("media", "State changed to: %s", x.c_str());
+            id(last_activity_time) = millis(); // Update activity time on any state change
             if (x == "playing") {
               id(is_playing) = true;
               id(play_start_time) = millis();
+              // Turn backlight on when playing starts
+              if (id(backlight_auto_toggle_enabled)) {
+                auto call = id(backlight).turn_on();
+                call.perform();
+              }
             } else {
               id(is_playing) = false;
             }
+
+# Check for idle timeout every 10 seconds
+interval:
+  - interval: 10s
+    then:
+      - lambda: |-
+          if (id(backlight_auto_toggle_enabled) && !id(is_playing)) {
+            unsigned long idle_time = millis() - id(last_activity_time);
+            // 60000ms = 1 minute
+            if (idle_time > 60000) {
+              ESP_LOGI("backlight", "Media idle for %lu ms, turning off backlight", idle_time);
+              auto call = id(backlight).turn_off();
+              call.perform();
+            }
+          }
 
 script:
   - id: play_pause_speaker
@@ -323,9 +351,10 @@ display:
       std::string artist = id(media_artist).state;
       std::string album = id(media_album).state;
 
-      if (title.length() > 32) title = title.substr(0, 29) + "...";
-      if (artist.length() > 40) artist = artist.substr(0, 37) + "...";
-      if (album.length() > 40) album = album.substr(0, 37) + "...";
+      // Better text truncation based on available width (280px for text area)
+      if (title.length() > 25) title = title.substr(0, 22) + "...";
+      if (artist.length() > 35) artist = artist.substr(0, 32) + "...";
+      if (album.length() > 55) album = album.substr(0, 52) + "...";
 
       // Title - larger, prominent
       it.print(160, 25, id(roboto_large), id(color_text), TextAlign::CENTER, title.c_str());
@@ -450,8 +479,15 @@ touchscreen:
     lambda: |-
       int touch_x = touch.x;
       int touch_y = 240 - touch.y;
-      
+
       ESP_LOGI("touch", "Touch at: %d, %d", touch_x, touch_y);
+
+      // Update activity time and turn on backlight on any touch
+      id(last_activity_time) = millis();
+      if (id(backlight_auto_toggle_enabled)) {
+        auto call = id(backlight).turn_on();
+        call.perform();
+      }
       
       // Play/Pause button - larger circular (136,121,56,56)
       if (touch_x >= 136 && touch_x <= 192 && touch_y >= 121 && touch_y <= 177) {
@@ -483,9 +519,28 @@ touchscreen:
         id(volume_up).execute();
       }
 
+switch:
+  - platform: template
+    name: "Screen Auto-Toggle"
+    id: auto_toggle_switch
+    restore_mode: RESTORE_DEFAULT_ON
+    turn_on_action:
+      - lambda: |-
+          id(backlight_auto_toggle_enabled) = true;
+          ESP_LOGI("backlight", "Auto-toggle enabled via switch");
+    turn_off_action:
+      - lambda: |-
+          id(backlight_auto_toggle_enabled) = false;
+          ESP_LOGI("backlight", "Auto-toggle disabled via switch");
+          // Turn backlight on when auto-toggle is disabled
+          auto call = id(backlight).turn_on();
+          call.perform();
+    lambda: |-
+      return id(backlight_auto_toggle_enabled);
+
 sensor:
-  - platform: wifi_signal # Reports the WiFi signal strength in %
-    name: "WiFi Signal"
+  - platform: wifi_signal # Reports the Wi-Fi signal strength in %
+    name: "Wi-Fi Signal"
     filters:
       - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
     unit_of_measurement: "%"
