@@ -4,6 +4,8 @@ esphome:
 
 esp32:
   board: esp32dev
+  framework:
+    type: esp-idf
 
 logger:
 
@@ -294,11 +296,11 @@ display:
       if (album.length() > 35) album = album.substr(0, 32) + "...";
       
       // Main title - bright white
-      it.print(160, 15, id(roboto_medium), id(color_text), TextAlign::CENTER, title.c_str());
+      it.print(160, 20, id(roboto_medium), id(color_text), TextAlign::CENTER, title.c_str());
       // Artist - secondary color
-      it.print(160, 32, id(roboto_small), id(color_text_secondary), TextAlign::CENTER, artist.c_str());
+      it.print(160, 37, id(roboto_small), id(color_text_secondary), TextAlign::CENTER, artist.c_str());
       // Album - dimmer
-      it.print(160, 47, id(roboto_small), id(color_text_secondary), TextAlign::CENTER, album.c_str());
+      it.print(160, 52, id(roboto_small), id(color_text_secondary), TextAlign::CENTER, album.c_str());
       
       // Calculate current position (local calculation)
       float current_position = id(media_position_at_start);
@@ -316,7 +318,7 @@ display:
       }
       
       // Enhanced progress bar with rounded corners effect
-      int bar_x = 10, bar_y = 65, bar_width = 300, bar_height = 8;
+      int bar_x = 10, bar_y = 70, bar_width = 300, bar_height = 8;
       // Background track
       it.filled_rectangle(bar_x, bar_y, bar_width, bar_height, id(color_surface));
       it.rectangle(bar_x, bar_y, bar_width, bar_height, id(color_text_secondary));
@@ -336,17 +338,17 @@ display:
         int dur_sec = (int)(duration) % 60;
         sprintf(time_text, "%d:%02d / %d:%02d", pos_min, pos_sec, dur_min, dur_sec);
       }
-      it.print(160, 85, id(roboto_small), id(color_text_secondary), TextAlign::CENTER, time_text);
+      it.print(160, 90, id(roboto_small), id(color_text_secondary), TextAlign::CENTER, time_text);
       
       // Enhanced control buttons with better colors
       // Previous button
-      int prev_x = 40, prev_y = 105, prev_w = 60, prev_h = 50;
+      int prev_x = 40, prev_y = 110, prev_w = 60, prev_h = 50;
       it.filled_rectangle(prev_x, prev_y, prev_w, prev_h, id(color_primary));
       it.rectangle(prev_x, prev_y, prev_w, prev_h, id(color_accent));
       it.image(prev_x + prev_w/2, prev_y + prev_h/2, id(prev_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
       
       // Play/Pause button - special highlighting when playing
-      int play_x = 130, play_y = 105, play_w = 60, play_h = 50;
+      int play_x = 130, play_y = 110, play_w = 60, play_h = 50;
       auto play_color = id(is_playing) ? id(color_success) : id(color_primary);
       auto play_border = id(is_playing) ? id(color_progress) : id(color_accent);
       it.filled_rectangle(play_x, play_y, play_w, play_h, play_color);
@@ -363,17 +365,17 @@ display:
         it.image(play_x + play_w/2, play_y + play_h/2, id(play_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
       }
       
-      // Next button  
-      int next_x = 220, next_y = 105, next_w = 60, next_h = 50;
+      // Next button
+      int next_x = 220, next_y = 110, next_w = 60, next_h = 50;
       it.filled_rectangle(next_x, next_y, next_w, next_h, id(color_primary));
       it.rectangle(next_x, next_y, next_w, next_h, id(color_accent));
       it.image(next_x + next_w/2, next_y + next_h/2, id(next_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
       
       // Volume section with accent color
-      it.print(160, 175, id(roboto_small), id(color_accent), TextAlign::CENTER, "Volume");
+      // it.print(160, 175, id(roboto_small), id(color_accent), TextAlign::CENTER, "Volume");
       
       // Enhanced volume bar
-      int vol_bar_x = 60, vol_bar_y = 190, vol_bar_w = 200, vol_bar_h = 12;
+      int vol_bar_x = 60, vol_bar_y = 185, vol_bar_w = 200, vol_bar_h = 12;
       it.filled_rectangle(vol_bar_x, vol_bar_y, vol_bar_w, vol_bar_h, id(color_surface));
       it.rectangle(vol_bar_x, vol_bar_y, vol_bar_w, vol_bar_h, id(color_text_secondary));
       int vol_fill_w = (int)((vol_bar_w - 2) * id(current_volume));
@@ -382,12 +384,12 @@ display:
       }
       
       // Volume buttons with consistent styling
-      int vol_down_x = 15, vol_down_y = 178, vol_down_w = 35, vol_down_h = 35;
+      int vol_down_x = 15, vol_down_y = 183, vol_down_w = 35, vol_down_h = 35;
       it.filled_rectangle(vol_down_x, vol_down_y, vol_down_w, vol_down_h, id(color_primary));
       it.rectangle(vol_down_x, vol_down_y, vol_down_w, vol_down_h, id(color_accent));
       it.image(vol_down_x + vol_down_w/2, vol_down_y + vol_down_h/2, id(vol_down_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
       
-      int vol_up_x = 270, vol_up_y = 178, vol_up_w = 35, vol_up_h = 35;
+      int vol_up_x = 270, vol_up_y = 183, vol_up_w = 35, vol_up_h = 35;
       it.filled_rectangle(vol_up_x, vol_up_y, vol_up_w, vol_up_h, id(color_primary));
       it.rectangle(vol_up_x, vol_up_y, vol_up_w, vol_up_h, id(color_accent));
       it.image(vol_up_x + vol_up_w/2, vol_up_y + vol_up_h/2, id(vol_up_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
@@ -395,7 +397,7 @@ display:
       // Volume percentage with accent color
       char vol_text[10];
       sprintf(vol_text, "%d%%", (int)(id(current_volume) * 100));
-      it.print(160, 215, id(roboto_small), id(color_accent), TextAlign::CENTER, vol_text);
+      it.print(160, 210, id(roboto_small), id(color_accent), TextAlign::CENTER, vol_text);
 
 touchscreen:
   platform: xpt2046
@@ -418,32 +420,32 @@ touchscreen:
       
       ESP_LOGI("touch", "Touch at: %d, %d", touch_x, touch_y);
       
-      // Play/Pause button (130,105,60,50)
-      if (touch_x >= 130 && touch_x <= 190 && touch_y >= 105 && touch_y <= 155) {
+      // Play/Pause button (130,110,60,50)
+      if (touch_x >= 130 && touch_x <= 190 && touch_y >= 110 && touch_y <= 160) {
         ESP_LOGI("touch", "Play/Pause pressed");
         id(play_pause_speaker).execute();
       }
-      
-      // Previous track button (40,105,60,50)
-      else if (touch_x >= 40 && touch_x <= 100 && touch_y >= 105 && touch_y <= 155) {
+
+      // Previous track button (40,110,60,50)
+      else if (touch_x >= 40 && touch_x <= 100 && touch_y >= 110 && touch_y <= 160) {
         ESP_LOGI("touch", "Previous track pressed");
         id(previous_track).execute();
       }
-      
-      // Next track button (220,105,60,50)
-      else if (touch_x >= 220 && touch_x <= 280 && touch_y >= 105 && touch_y <= 155) {
+
+      // Next track button (220,110,60,50)
+      else if (touch_x >= 220 && touch_x <= 280 && touch_y >= 110 && touch_y <= 160) {
         ESP_LOGI("touch", "Next track pressed");
         id(next_track).execute();
       }
       
-      // Volume down button (20,185,35,22)
-      else if (touch_x >= 20 && touch_x <= 55 && touch_y >= 185 && touch_y <= 207) {
+      // Volume down button (15,183,35,35)
+      else if (touch_x >= 15 && touch_x <= 50 && touch_y >= 183 && touch_y <= 218) {
         ESP_LOGI("touch", "Volume down pressed");
         id(volume_down).execute();
       }
-      
-      // Volume up button (265,185,35,22)
-      else if (touch_x >= 265 && touch_x <= 300 && touch_y >= 185 && touch_y <= 207) {
+
+      // Volume up button (270,183,35,35)
+      else if (touch_x >= 270 && touch_x <= 305 && touch_y >= 183 && touch_y <= 218) {
         ESP_LOGI("touch", "Volume up pressed");
         id(volume_up).execute();
       }
