@@ -299,7 +299,7 @@ spi:
 
 display:
   - platform: ili9xxx
-    model: ILI9341
+    model: ILI9342
     spi_id: tft
     cs_pin: GPIO15
     dc_pin: GPIO2
@@ -483,3 +483,12 @@ touchscreen:
         id(volume_up).execute();
       }
 
+sensor:
+  - platform: wifi_signal # Reports the WiFi signal strength in %
+    name: "WiFi Signal"
+    filters:
+      - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
+    unit_of_measurement: "%"
+    id: wifi_signal_pct
+    update_interval: 60s
+    entity_category: "diagnostic"
