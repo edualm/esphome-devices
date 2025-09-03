@@ -397,7 +397,7 @@ display:
 
       // Volume buttons - smaller, circular, lowered for better alignment
       int vol_button_size = 32;
-      int vol_button_y = vol_y + 2 - vol_button_size/2 + 12; // 4px lower
+      int vol_button_y = vol_y + 2 - vol_button_size/2 + 15;
       int vol_down_x = 25;
       it.filled_circle(vol_down_x + vol_button_size/2, vol_button_y, vol_button_size/2, id(color_surface_variant));
       it.image(vol_down_x + vol_button_size/2, vol_button_y, id(vol_down_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
@@ -450,14 +450,14 @@ touchscreen:
         id(next_track).execute();
       }
       
-      // Volume down button - circular (25,191,32,32) - lowered 4px
-      else if (touch_x >= 25 && touch_x <= 57 && touch_y >= 191 && touch_y <= 223) {
+      // Volume down button - circular (25,194,32,32)
+      else if (touch_x >= 25 && touch_x <= 57 && touch_y >= 194 && touch_y <= 228) {
         ESP_LOGI("touch", "Volume down pressed");
         id(volume_down).execute();
       }
 
-      // Volume up button - circular (263,191,32,32) - lowered 4px
-      else if (touch_x >= 263 && touch_x <= 295 && touch_y >= 191 && touch_y <= 223) {
+      // Volume up button - circular (263,194,32,32)
+      else if (touch_x >= 263 && touch_x <= 295 && touch_y >= 194 && touch_y <= 228) {
         ESP_LOGI("touch", "Volume up pressed");
         id(volume_up).execute();
       }
