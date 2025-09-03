@@ -142,12 +142,26 @@ text_sensor:
     entity_id: media_player.escritorio
     attribute: media_title
     internal: true
+    on_value:
+      then:
+        - lambda: |-
+            // Reset position tracking when song changes
+            ESP_LOGI("media", "Title changed to: %s", x.c_str());
+            id(media_position_at_start) = 0.0;
+            id(play_start_time) = millis();
 
   - platform: homeassistant
     id: media_artist
     entity_id: media_player.escritorio
     attribute: media_artist
     internal: true
+    on_value:
+      then:
+        - lambda: |-
+            // Also reset on artist change (additional safety)
+            ESP_LOGI("media", "Artist changed to: %s", x.c_str());
+            id(media_position_at_start) = 0.0;
+            id(play_start_time) = millis();
 
   - platform: homeassistant
     id: media_album
@@ -177,7 +191,14 @@ text_sensor:
       then:
         - lambda: |-
             if (!x.empty() && x != "unknown") {
-              id(media_duration_seconds) = atof(x.c_str());
+              float new_duration = atof(x.c_str());
+              // If duration changed significantly, it's likely a new song
+              if (abs(new_duration - id(media_duration_seconds)) > 5.0) {
+                ESP_LOGI("media", "Duration changed significantly: %f -> %f", id(media_duration_seconds), new_duration);
+                id(media_position_at_start) = 0.0;
+                id(play_start_time) = millis();
+              }
+              id(media_duration_seconds) = new_duration;
             }
 
   - platform: homeassistant
