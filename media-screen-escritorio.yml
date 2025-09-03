@@ -71,44 +71,52 @@ image:
     transparency: chroma_key
     resize: 20x20
 
-# Improved color scheme (red/blue swapped for your display)
+# Modern color scheme (red/blue swapped for your display)
 color:
   - id: color_primary
-    red: 0.42     # Will display as gray (nice button color)
-    green: 0.42
+    red: 0.25     # Modern dark gray buttons
+    green: 0.28
+    blue: 0.32
+  - id: color_primary_hover
+    red: 0.35     # Lighter on hover/active
+    green: 0.38
     blue: 0.42
-  - id: color_primary_dark
-    red: 0.6      # Darker blue for pressed states
-    green: 0.3
-    blue: 0.05
   - id: color_success
-    red: 0.1      # Will display as green (playing state)
-    green: 0.8
-    blue: 0.3
+    red: 0.15     # Modern green (playing state)
+    green: 0.85
+    blue: 0.25
   - id: color_accent
-    red: 0.2      # Teal accent color
-    green: 0.7
-    blue: 0.9
+    red: 0.0      # Vibrant blue accent
+    green: 0.5
+    blue: 1.0
   - id: color_background
-    red: 0.08     # Dark background with slight blue tint
-    green: 0.12
-    blue: 0.18
+    red: 0.05     # Deep dark background
+    green: 0.05
+    blue: 0.08
   - id: color_surface
-    red: 0.12     # Slightly lighter surface color
-    green: 0.16
-    blue: 0.22
+    red: 0.08     # Card-like surface
+    green: 0.08
+    blue: 0.12
+  - id: color_surface_variant
+    red: 0.12     # Slightly lighter surface
+    green: 0.12
+    blue: 0.16
   - id: color_text
-    red: 0.95     # Light text (white)
-    green: 0.95
-    blue: 0.95
+    red: 0.98     # Pure white text
+    green: 0.98
+    blue: 0.98
   - id: color_text_secondary
-    red: 0.7      # Secondary text (dimmer)
-    green: 0.7
-    blue: 0.7
+    red: 0.65     # Muted secondary text
+    green: 0.65
+    blue: 0.68
   - id: color_progress
-    red: 0.0      # Bright green for progress bars
-    green: 0.9
-    blue: 0.4
+    red: 0.0      # Bright accent for progress
+    green: 0.5
+    blue: 1.0
+  - id: color_progress_bg
+    red: 0.15     # Progress track background
+    green: 0.15
+    blue: 0.18
 
 globals:
   - id: current_volume
@@ -283,24 +291,27 @@ display:
       height: 240
     update_interval: 500ms
     lambda: |-
-      // Clear background with gradient-like effect
+      // Modern dark background
       it.fill(id(color_background));
-      
-      // Song info with improved hierarchy
+
+      // Modern card-like container for song info - taller for better spacing
+      it.filled_rectangle(10, 10, 300, 62, id(color_surface));
+
+      // Song info with modern typography hierarchy
       std::string title = id(media_title).state;
       std::string artist = id(media_artist).state;
       std::string album = id(media_album).state;
-      
-      if (title.length() > 35) title = title.substr(0, 32) + "...";
-      if (artist.length() > 35) artist = artist.substr(0, 32) + "...";
-      if (album.length() > 35) album = album.substr(0, 32) + "...";
-      
-      // Main title - bright white
-      it.print(160, 20, id(roboto_medium), id(color_text), TextAlign::CENTER, title.c_str());
-      // Artist - secondary color
-      it.print(160, 37, id(roboto_small), id(color_text_secondary), TextAlign::CENTER, artist.c_str());
-      // Album - dimmer
-      it.print(160, 52, id(roboto_small), id(color_text_secondary), TextAlign::CENTER, album.c_str());
+
+      if (title.length() > 32) title = title.substr(0, 29) + "...";
+      if (artist.length() > 40) artist = artist.substr(0, 37) + "...";
+      if (album.length() > 40) album = album.substr(0, 37) + "...";
+
+      // Title - larger, prominent
+      it.print(160, 25, id(roboto_large), id(color_text), TextAlign::CENTER, title.c_str());
+      // Artist - medium prominence (2px more margin)
+      it.print(160, 47, id(roboto_medium), id(color_text_secondary), TextAlign::CENTER, artist.c_str());
+      // Album - subtle, smaller (2px more margin)
+      it.print(160, 62, id(roboto_small), id(color_text_secondary), TextAlign::CENTER, album.c_str());
       
       // Calculate current position (local calculation)
       float current_position = id(media_position_at_start);
@@ -308,28 +319,34 @@ display:
         unsigned long elapsed_ms = millis() - id(play_start_time);
         current_position += (elapsed_ms / 1000.0);
       }
-      
+
+      // Clamp current position to never exceed song duration
       float duration = id(media_duration_seconds);
+      if (duration > 0.0 && current_position > duration) {
+        current_position = duration;
+      }
+      
+      // Calculate progress (current_position is already clamped)
       float progress = 0.0;
       if (duration > 0.0 && current_position >= 0.0) {
         progress = current_position / duration;
+        // Additional safety clamp (should not be needed due to position clamping above)
         if (progress > 1.0) progress = 1.0;
         if (progress < 0.0) progress = 0.0;
       }
       
-      // Enhanced progress bar with rounded corners effect
-      int bar_x = 10, bar_y = 70, bar_width = 300, bar_height = 8;
-      // Background track
-      it.filled_rectangle(bar_x, bar_y, bar_width, bar_height, id(color_surface));
-      it.rectangle(bar_x, bar_y, bar_width, bar_height, id(color_text_secondary));
-      
-      // Progress fill
-      int fill_width = (int)(progress * (bar_width - 2));
+      // Modern progress bar with better proportions - more spacing from song info
+      int bar_x = 20, bar_y = 82, bar_width = 280, bar_height = 6;
+      // Background track - subtle
+      it.filled_rectangle(bar_x, bar_y, bar_width, bar_height, id(color_progress_bg));
+
+      // Progress fill - vibrant accent color
+      int fill_width = (int)(progress * bar_width);
       if (fill_width > 0) {
-        it.filled_rectangle(bar_x + 1, bar_y + 1, fill_width, bar_height - 2, id(color_progress));
+        it.filled_rectangle(bar_x, bar_y, fill_width, bar_height, id(color_progress));
       }
-      
-      // Time display
+
+      // Time display with modern styling
       char time_text[20] = "0:00 / 0:00";
       if (duration > 0.0) {
         int pos_min = (int)(current_position / 60);
@@ -338,66 +355,61 @@ display:
         int dur_sec = (int)(duration) % 60;
         sprintf(time_text, "%d:%02d / %d:%02d", pos_min, pos_sec, dur_min, dur_sec);
       }
-      it.print(160, 90, id(roboto_small), id(color_text_secondary), TextAlign::CENTER, time_text);
+      it.print(160, 102, id(roboto_small), id(color_text_secondary), TextAlign::CENTER, time_text);
       
-      // Enhanced control buttons with better colors
-      // Previous button
-      int prev_x = 40, prev_y = 110, prev_w = 60, prev_h = 50;
-      it.filled_rectangle(prev_x, prev_y, prev_w, prev_h, id(color_primary));
-      it.rectangle(prev_x, prev_y, prev_w, prev_h, id(color_accent));
-      it.image(prev_x + prev_w/2, prev_y + prev_h/2, id(prev_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
-      
-      // Play/Pause button - special highlighting when playing
-      int play_x = 130, play_y = 110, play_w = 60, play_h = 50;
-      auto play_color = id(is_playing) ? id(color_success) : id(color_primary);
-      auto play_border = id(is_playing) ? id(color_progress) : id(color_accent);
-      it.filled_rectangle(play_x, play_y, play_w, play_h, play_color);
-      it.rectangle(play_x, play_y, play_w, play_h, play_border);
-      // Extra glow effect when playing
-      if (id(is_playing)) {
-        it.rectangle(play_x - 1, play_y - 1, play_w + 2, play_h + 2, play_border);
-      }
-      
+      // Modern control buttons - circular design with more spacing
+      int button_y = 125;
+      int button_size = 48;
+
+      // Previous button - circular
+      int prev_x = 60;
+      it.filled_circle(prev_x + button_size/2, button_y + button_size/2, button_size/2, id(color_primary));
+      it.image(prev_x + button_size/2, button_y + button_size/2, id(prev_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
+
+      // Play/Pause button - larger, prominent
+      int play_x = 136;
+      int play_size = 56;
+      auto play_color = id(is_playing) ? id(color_success) : id(color_accent);
+      it.filled_circle(play_x + play_size/2, button_y + play_size/2 - 4, play_size/2, play_color);
+
       // Show play or pause icon based on state
       if (id(is_playing)) {
-        it.image(play_x + play_w/2, play_y + play_h/2, id(pause_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
+        it.image(play_x + play_size/2, button_y + play_size/2 - 4, id(pause_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
       } else {
-        it.image(play_x + play_w/2, play_y + play_h/2, id(play_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
+        it.image(play_x + play_size/2, button_y + play_size/2 - 4, id(play_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
       }
+
+      // Next button - circular
+      int next_x = 212;
+      it.filled_circle(next_x + button_size/2, button_y + button_size/2, button_size/2, id(color_primary));
+      it.image(next_x + button_size/2, button_y + button_size/2, id(next_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
       
-      // Next button
-      int next_x = 220, next_y = 110, next_w = 60, next_h = 50;
-      it.filled_rectangle(next_x, next_y, next_w, next_h, id(color_primary));
-      it.rectangle(next_x, next_y, next_w, next_h, id(color_accent));
-      it.image(next_x + next_w/2, next_y + next_h/2, id(next_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
-      
-      // Volume section with accent color
-      // it.print(160, 175, id(roboto_small), id(color_accent), TextAlign::CENTER, "Volume");
-      
-      // Enhanced volume bar
-      int vol_bar_x = 60, vol_bar_y = 185, vol_bar_w = 200, vol_bar_h = 12;
-      it.filled_rectangle(vol_bar_x, vol_bar_y, vol_bar_w, vol_bar_h, id(color_surface));
-      it.rectangle(vol_bar_x, vol_bar_y, vol_bar_w, vol_bar_h, id(color_text_secondary));
-      int vol_fill_w = (int)((vol_bar_w - 2) * id(current_volume));
+      // Modern volume section with more spacing
+      int vol_y = 195;
+
+      // Volume bar - sleek and minimal
+      int vol_bar_x = 70, vol_bar_w = 180, vol_bar_h = 4;
+      it.filled_rectangle(vol_bar_x, vol_y, vol_bar_w, vol_bar_h, id(color_progress_bg));
+      int vol_fill_w = (int)(vol_bar_w * id(current_volume));
       if (vol_fill_w > 0) {
-        it.filled_rectangle(vol_bar_x + 1, vol_bar_y + 1, vol_fill_w, vol_bar_h - 2, id(color_accent));
+        it.filled_rectangle(vol_bar_x, vol_y, vol_fill_w, vol_bar_h, id(color_accent));
       }
-      
-      // Volume buttons with consistent styling
-      int vol_down_x = 15, vol_down_y = 183, vol_down_w = 35, vol_down_h = 35;
-      it.filled_rectangle(vol_down_x, vol_down_y, vol_down_w, vol_down_h, id(color_primary));
-      it.rectangle(vol_down_x, vol_down_y, vol_down_w, vol_down_h, id(color_accent));
-      it.image(vol_down_x + vol_down_w/2, vol_down_y + vol_down_h/2, id(vol_down_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
-      
-      int vol_up_x = 270, vol_up_y = 183, vol_up_w = 35, vol_up_h = 35;
-      it.filled_rectangle(vol_up_x, vol_up_y, vol_up_w, vol_up_h, id(color_primary));
-      it.rectangle(vol_up_x, vol_up_y, vol_up_w, vol_up_h, id(color_accent));
-      it.image(vol_up_x + vol_up_w/2, vol_up_y + vol_up_h/2, id(vol_up_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
-      
-      // Volume percentage with accent color
+
+      // Volume buttons - smaller, circular, lowered for better alignment
+      int vol_button_size = 32;
+      int vol_button_y = vol_y + 2 - vol_button_size/2 + 12; // 4px lower
+      int vol_down_x = 25;
+      it.filled_circle(vol_down_x + vol_button_size/2, vol_button_y, vol_button_size/2, id(color_surface_variant));
+      it.image(vol_down_x + vol_button_size/2, vol_button_y, id(vol_down_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
+
+      int vol_up_x = 263;
+      it.filled_circle(vol_up_x + vol_button_size/2, vol_button_y, vol_button_size/2, id(color_surface_variant));
+      it.image(vol_up_x + vol_button_size/2, vol_button_y, id(vol_up_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
+
+      // Volume percentage - subtle
       char vol_text[10];
       sprintf(vol_text, "%d%%", (int)(id(current_volume) * 100));
-      it.print(160, 210, id(roboto_small), id(color_accent), TextAlign::CENTER, vol_text);
+      it.print(160, 218, id(roboto_small), id(color_text_secondary), TextAlign::CENTER, vol_text);
 
 touchscreen:
   platform: xpt2046
@@ -420,32 +432,32 @@ touchscreen:
       
       ESP_LOGI("touch", "Touch at: %d, %d", touch_x, touch_y);
       
-      // Play/Pause button (130,110,60,50)
-      if (touch_x >= 130 && touch_x <= 190 && touch_y >= 110 && touch_y <= 160) {
+      // Play/Pause button - larger circular (136,121,56,56)
+      if (touch_x >= 136 && touch_x <= 192 && touch_y >= 121 && touch_y <= 177) {
         ESP_LOGI("touch", "Play/Pause pressed");
         id(play_pause_speaker).execute();
       }
 
-      // Previous track button (40,110,60,50)
-      else if (touch_x >= 40 && touch_x <= 100 && touch_y >= 110 && touch_y <= 160) {
+      // Previous track button - circular (60,125,48,48)
+      else if (touch_x >= 60 && touch_x <= 108 && touch_y >= 125 && touch_y <= 173) {
         ESP_LOGI("touch", "Previous track pressed");
         id(previous_track).execute();
       }
 
-      // Next track button (220,110,60,50)
-      else if (touch_x >= 220 && touch_x <= 280 && touch_y >= 110 && touch_y <= 160) {
+      // Next track button - circular (212,125,48,48)
+      else if (touch_x >= 212 && touch_x <= 260 && touch_y >= 125 && touch_y <= 173) {
         ESP_LOGI("touch", "Next track pressed");
         id(next_track).execute();
       }
       
-      // Volume down button (15,183,35,35)
-      else if (touch_x >= 15 && touch_x <= 50 && touch_y >= 183 && touch_y <= 218) {
+      // Volume down button - circular (25,191,32,32) - lowered 4px
+      else if (touch_x >= 25 && touch_x <= 57 && touch_y >= 191 && touch_y <= 223) {
         ESP_LOGI("touch", "Volume down pressed");
         id(volume_down).execute();
       }
 
-      // Volume up button (270,183,35,35)
-      else if (touch_x >= 270 && touch_x <= 305 && touch_y >= 183 && touch_y <= 218) {
+      // Volume up button - circular (263,191,32,32) - lowered 4px
+      else if (touch_x >= 263 && touch_x <= 295 && touch_y >= 191 && touch_y <= 223) {
         ESP_LOGI("touch", "Volume up pressed");
         id(volume_up).execute();
       }
