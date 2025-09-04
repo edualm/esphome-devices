@@ -412,12 +412,12 @@ display:
       int button_size = 48;
 
       // Previous button - circular
-      int prev_x = 60;
+      int prev_x = 56;
       it.filled_circle(prev_x + button_size/2, button_y + button_size/2, button_size/2, id(color_primary));
       it.image(prev_x + button_size/2, button_y + button_size/2, id(prev_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
 
       // Play/Pause button - larger, prominent
-      int play_x = 136;
+      int play_x = 132;
       int play_size = 56;
       auto play_color = id(is_playing) ? id(color_success) : id(color_accent);
       it.filled_circle(play_x + play_size/2, button_y + play_size/2 - 4, play_size/2, play_color);
@@ -430,7 +430,7 @@ display:
       }
 
       // Next button - circular
-      int next_x = 212;
+      int next_x = 216;
       it.filled_circle(next_x + button_size/2, button_y + button_size/2, button_size/2, id(color_primary));
       it.image(next_x + button_size/2, button_y + button_size/2, id(next_icon), ImageAlign::CENTER, id(color_text), COLOR_OFF);
       
@@ -489,20 +489,20 @@ touchscreen:
         call.perform();
       }
       
-      // Play/Pause button - larger circular (136,121,56,56)
-      if (touch_x >= 136 && touch_x <= 192 && touch_y >= 121 && touch_y <= 177) {
+      // Play/Pause button - larger circular (132,121,56,56)
+      if (touch_x >= 132 && touch_x <= 188 && touch_y >= 121 && touch_y <= 177) {
         ESP_LOGI("touch", "Play/Pause pressed");
         id(play_pause_speaker).execute();
       }
 
-      // Previous track button - circular (60,125,48,48)
-      else if (touch_x >= 60 && touch_x <= 108 && touch_y >= 125 && touch_y <= 173) {
+      // Previous track button - circular (56,125,48,48)
+      else if (touch_x >= 56 && touch_x <= 104 && touch_y >= 125 && touch_y <= 173) {
         ESP_LOGI("touch", "Previous track pressed");
         id(previous_track).execute();
       }
 
-      // Next track button - circular (212,125,48,48)
-      else if (touch_x >= 212 && touch_x <= 260 && touch_y >= 125 && touch_y <= 173) {
+      // Next track button - circular (216,125,48,48)
+      else if (touch_x >= 216 && touch_x <= 264 && touch_y >= 125 && touch_y <= 173) {
         ESP_LOGI("touch", "Next track pressed");
         id(next_track).execute();
       }
